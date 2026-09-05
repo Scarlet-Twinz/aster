@@ -317,7 +317,12 @@ impl Parser {
         }
     }
 
-    fn binary<F>(&mut self, mut next: F, operators: &[TokenKind], operator: BinaryOp) -> Result<Expr, ParseError>
+    fn binary<F>(
+        &mut self,
+        mut next: F,
+        operators: &[TokenKind],
+        operator: BinaryOp,
+    ) -> Result<Expr, ParseError>
     where
         F: FnMut(&mut Self) -> Result<Expr, ParseError>,
     {
@@ -340,7 +345,11 @@ impl Parser {
                 return;
             }
             match self.peek().kind {
-                TokenKind::Let | TokenKind::Fn | TokenKind::If | TokenKind::Return | TokenKind::Print => return,
+                TokenKind::Let
+                | TokenKind::Fn
+                | TokenKind::If
+                | TokenKind::Return
+                | TokenKind::Print => return,
                 _ => {
                     self.advance();
                 }
@@ -349,10 +358,15 @@ impl Parser {
     }
 
     fn expect_identifier(&mut self, message: &str) -> Result<String, ParseError> {
-        if let TokenKind::Identifier(name) = self.advance().kind.clone() {
+        let token = self.advance().clone();
+        if let TokenKind::Identifier(name) = token.kind {
             Ok(name)
         } else {
-            Err(self.error(message))
+            Err(ParseError {
+                message: message.into(),
+                line: token.line,
+                column: token.column,
+            })
         }
     }
 
@@ -387,10 +401,10 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        if !self.is_at_end() {
+        if self.current + 1 < self.tokens.len() {
             self.current += 1;
         }
-        &self.tokens[self.current - 1]
+        &self.tokens[self.current]
     }
 
     fn peek(&self) -> &Token {
