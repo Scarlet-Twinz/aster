@@ -1,0 +1,5 @@
+let answer = 40 + 2;
+
+if answer > 0 {
+    print(answer);
+}
