@@ -1,0 +1,8 @@
+[package]
+name = "aster"
+version = "0.1.0"
+edition = "2021"
+description = "A general-purpose programming language and compiler built from scratch."
+license = "MIT"
+
+[dependencies]
