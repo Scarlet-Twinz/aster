@@ -42,7 +42,7 @@ impl Analyzer {
                     }
                 }
                 if self.current_scope_contains(name) { self.error(format!("variable '{}' is already declared in this scope", name)); }
-                else { self.define(name.clone(), type_annotation.copied().unwrap_or(value_type)); }
+                else { self.define(name.clone(), type_annotation.as_ref().copied().unwrap_or(value_type)); }
                 Type::Void
             }
             Stmt::Expression(expression) => { self.check_expression(expression); Type::Void }
