@@ -401,10 +401,11 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        if self.current + 1 < self.tokens.len() {
+        let index = self.current;
+        if !self.is_at_end() {
             self.current += 1;
         }
-        &self.tokens[self.current]
+        &self.tokens[index]
     }
 
     fn peek(&self) -> &Token {
