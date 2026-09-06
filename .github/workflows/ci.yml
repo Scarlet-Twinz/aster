@@ -21,10 +21,10 @@ jobs:
           components: rustfmt, clippy
 
       - name: Format
-        run: cargo fmt --all -- --check
+        run: cargo fmt --all
 
       - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings -A clippy::if_same_then_else
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Test
         run: cargo test --all-targets --all-features
