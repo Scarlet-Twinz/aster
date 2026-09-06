@@ -45,8 +45,11 @@ The project is being developed as a real compiler implementation rather than a s
 - [x] Runtime values
 - [x] Conditional jumps
 - [x] Global variable storage
+- [x] Function bytecode
+- [x] Local variable slots
+- [x] VM call frames
+- [x] Recursive function calls
 - [x] Execution regression tests
-- [ ] Function bytecode and call frames
 - [ ] Closures
 - [ ] Memory management
 
@@ -55,6 +58,7 @@ The project is being developed as a real compiler implementation rather than a s
 - [x] Basic compiler CLI
 - [x] Semantic `--check` mode
 - [x] AST inspection mode
+- [x] Function and recursion example
 - [ ] REPL
 - [ ] Standard library
 - [ ] Rich source spans and diagnostics
@@ -89,6 +93,19 @@ Inspect the parsed AST:
 cargo run -- --dump-ast examples/hello.aster
 ```
 
+Functions and recursion:
+
+```bash
+cargo run -- examples/functions.aster
+```
+
+Expected output:
+
+```text
+42
+120
+```
+
 Run the test suite:
 
 ```bash
@@ -102,10 +119,10 @@ ASTER is deliberately staged so each compiler phase has a clear responsibility:
 1. **Lexer** converts source text into tokens and reports lexical errors.
 2. **Parser** converts tokens into an AST using recursive descent and precedence-aware expression parsing.
 3. **Semantic analyzer** resolves lexical scopes and validates names, function arity, and basic expression types.
-4. **Bytecode compiler** lowers validated core language constructs into a compact stack-machine instruction stream.
-5. **Virtual machine** executes bytecode using explicit runtime values, a value stack, and global storage.
+4. **Bytecode compiler** lowers validated language constructs into stack-machine instructions, including function bodies and calls.
+5. **Virtual machine** executes bytecode using explicit runtime values, a value stack, global storage, local slots, and call frames.
 
-The next execution milestone is function compilation with call frames, followed by richer runtime semantics.
+Function calls are compiled ahead of execution, arguments are placed into frame-local slots, and `return` transfers a value back to the caller. Recursive calls therefore create independent frames.
 
 See [`docs/architecture.md`](docs/architecture.md) for the longer design notes.
 
