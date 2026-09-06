@@ -25,14 +25,24 @@ pub enum CompileError {
     Runtime(VmError),
 }
 
-pub fn parse_source(source: &str) -> Result<Program, CompileError> {
-    let tokens = Lexer::new(source)
-        .tokenize()
-        .map_err(|error| CompileError::Lex(vec![error]))?;
+impl std::fmt::Display for CompileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Lex(errors) => { writeln!(f, "lexical error(s):")?; for e in errors { writeln!(f, "  {}:{}: {}", e.line, e.column, e.message)?; } }
+            Self::Parse(errors) => { writeln!(f, "parse error(s):")?; for e in errors { writeln!(f, "  {}:{}: {}", e.line, e.column, e.message)?; } }
+            Self::Semantic(errors) => { writeln!(f, "semantic error(s):")?; for e in errors { writeln!(f, "  {}", e.message)?; } }
+            Self::Bytecode(e) => write!(f, "bytecode error: {}", e.message)?,
+            Self::Runtime(e) => write!(f, "runtime error: {}", e.message)?,
+        }
+        Ok(())
+    }
+}
 
-    Parser::new(tokens)
-        .parse()
-        .map_err(CompileError::Parse)
+impl std::error::Error for CompileError {}
+
+pub fn parse_source(source: &str) -> Result<Program, CompileError> {
+    let tokens = Lexer::new(source).tokenize().map_err(|error| CompileError::Lex(vec![error]))?;
+    Parser::new(tokens).parse().map_err(CompileError::Parse)
 }
 
 pub fn analyze_source(source: &str) -> Result<Program, CompileError> {
