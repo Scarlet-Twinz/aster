@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod bytecode;
+pub mod disassembler;
 pub mod lexer;
 pub mod parser;
 pub mod semantic;
@@ -9,6 +10,7 @@ pub mod vm;
 
 use ast::Program;
 use bytecode::{compile, BytecodeError, Chunk};
+use disassembler::disassemble;
 use lexer::{LexError, Lexer};
 use parser::{ParseError, Parser};
 use semantic::{analyze, SemanticError};
@@ -47,4 +49,9 @@ pub fn compile_source(source: &str) -> Result<Chunk, CompileError> {
 pub fn execute_source(source: &str) -> Result<Vec<String>, CompileError> {
     let chunk = compile_source(source)?;
     run(&chunk).map_err(CompileError::Runtime)
+}
+
+pub fn disassemble_source(source: &str) -> Result<String, CompileError> {
+    let chunk = compile_source(source)?;
+    Ok(disassemble(&chunk))
 }
