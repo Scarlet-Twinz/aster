@@ -1,6 +1,6 @@
 use std::{env, fs, process};
 
-use aster::{analyze_source, execute_source, parse_source, CompileError};
+use aster::{analyze_source, disassemble_source, execute_source, parse_source, CompileError};
 
 fn main() {
     let mut args = env::args().skip(1);
@@ -9,6 +9,11 @@ fn main() {
     let (mode, path) = match first.as_deref() {
         Some("--check") => ("check", args.next()),
         Some("--dump-ast") => ("ast", args.next()),
+        Some("--dump-bytecode") => ("bytecode", args.next()),
+        Some("--help") | Some("-h") => {
+            print_usage();
+            return;
+        }
         Some(path) => ("run", Some(path.to_string())),
         None => ("run", None),
     };
@@ -16,7 +21,7 @@ fn main() {
     let path = match path {
         Some(path) => path,
         None => {
-            eprintln!("Usage: aster [--check|--dump-ast] <file.aster>");
+            print_usage();
             process::exit(2);
         }
     };
@@ -41,11 +46,27 @@ fn main() {
             Ok(program) => println!("{:#?}", program),
             Err(error) => fail(error),
         },
+        "bytecode" => match disassemble_source(&source) {
+            Ok(bytecode) => print!("{}", bytecode),
+            Err(error) => fail(error),
+        },
         _ => match execute_source(&source) {
             Ok(_) => {}
             Err(error) => fail(error),
         },
     }
+}
+
+fn print_usage() {
+    println!(
+        "Usage: aster [--check|--dump-ast|--dump-bytecode|--help] <file.aster>\n\n\
+         Modes:\n\
+           <file.aster>       Compile and execute the program\n\
+           --check            Run semantic analysis only\n\
+           --dump-ast         Parse and print the AST\n\
+           --dump-bytecode    Compile and print VM bytecode\n\
+           --help             Show this help"
+    );
 }
 
 fn fail(error: CompileError) -> ! {
