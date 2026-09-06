@@ -36,6 +36,21 @@ fn parses_function_calls_and_conditionals() {
 }
 
 #[test]
+fn parses_assignment_after_declaration() {
+    let source = "let answer = 40; answer = answer + 2;";
+    let program = parse_source(source).expect("source should parse");
+
+    assert_eq!(program.statements.len(), 2);
+    match &program.statements[1] {
+        Stmt::Expression(Expr::Assign { name, value }) => {
+            assert_eq!(name, "answer");
+            assert!(matches!(value.as_ref(), Expr::Binary { operator: BinaryOp::Add, .. }));
+        }
+        _ => panic!("expected assignment expression"),
+    }
+}
+
+#[test]
 fn reports_lexical_errors() {
     assert!(parse_source("let x = @;").is_err());
 }
