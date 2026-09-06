@@ -43,3 +43,38 @@ fn executes_assignment() {
 
     assert_eq!(output, vec!["42".to_string()]);
 }
+
+#[test]
+fn executes_function_calls() {
+    let output = execute_source(
+        r#"
+            fn add(a, b) {
+                return a + b;
+            }
+
+            print(add(20, 22));
+        "#,
+    )
+    .expect("function call should execute");
+
+    assert_eq!(output, vec!["42".to_string()]);
+}
+
+#[test]
+fn executes_recursive_functions() {
+    let output = execute_source(
+        r#"
+            fn factorial(n) {
+                if n <= 1 {
+                    return 1;
+                }
+                return n * factorial(n - 1);
+            }
+
+            print(factorial(5));
+        "#,
+    )
+    .expect("recursive function should execute");
+
+    assert_eq!(output, vec!["120".to_string()]);
+}
