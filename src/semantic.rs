@@ -8,7 +8,7 @@ pub struct SemanticError {
     pub message: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct FunctionInfo {
     arity: usize,
 }
@@ -31,11 +31,9 @@ impl Analyzer {
 
     pub fn analyze(mut self, program: &Program) -> Result<(), Vec<SemanticError>> {
         self.register_functions(program);
-
         for statement in &program.statements {
             self.check_statement(statement);
         }
-
         if self.errors.is_empty() {
             Ok(())
         } else {
@@ -49,10 +47,7 @@ impl Analyzer {
                 if self.functions.contains_key(name) {
                     self.error(format!("function '{}' is already declared", name));
                 } else {
-                    self.functions.insert(
-                        name.clone(),
-                        FunctionInfo { arity: params.len() },
-                    );
+                    self.functions.insert(name.clone(), FunctionInfo { arity: params.len() });
                 }
             }
         }
@@ -92,11 +87,7 @@ impl Analyzer {
                 self.end_scope();
                 Type::Void
             }
-            Stmt::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
+            Stmt::If { condition, then_branch, else_branch } => {
                 let condition_type = self.check_expression(condition);
                 self.require_type(condition_type, Type::Boolean, "if condition must be bool");
                 self.check_statement(then_branch);
@@ -105,16 +96,19 @@ impl Analyzer {
                 }
                 Type::Void
             }
-            Stmt::Function { name, params, body } => {
+            Stmt::Function { params, body, .. } => {
                 self.begin_scope();
                 for parameter in params {
-                    self.define(parameter.clone(), Type::Unknown);
+                    if self.current_scope_contains(parameter) {
+                        self.error(format!("parameter '{}' is declared more than once", parameter));
+                    } else {
+                        self.define(parameter.clone(), Type::Unknown);
+                    }
                 }
                 for statement in body {
                     self.check_statement(statement);
                 }
                 self.end_scope();
-                let _ = name;
                 Type::Void
             }
         }
@@ -125,13 +119,26 @@ impl Analyzer {
             Expr::Number(_) => Type::Number,
             Expr::String(_) => Type::String,
             Expr::Boolean(_) => Type::Boolean,
-            Expr::Variable(name) => self.lookup(name).unwrap_or_else(|| {
-                self.error(format!("undefined variable '{}'", name));
-                Type::Unknown
-            }),
+            Expr::Variable(name) => match self.lookup(name) {
+                Some(ty) => ty,
+                None => {
+                    self.error(format!("undefined variable '{}'", name));
+                    Type::Unknown
+                }
+            },
             Expr::Assign { name, value } => {
                 let value_type = self.check_expression(value);
-                if self.lookup(name).is_none() {
+                if let Some(existing_type) = self.lookup(name) {
+                    if existing_type != Type::Unknown
+                        && value_type != Type::Unknown
+                        && existing_type != value_type
+                    {
+                        self.error(format!(
+                            "cannot assign {} to variable '{}' of type {}",
+                            value_type, name, existing_type
+                        ));
+                    }
+                } else {
                     self.error(format!("cannot assign to undefined variable '{}'", name));
                 }
                 value_type
@@ -149,34 +156,26 @@ impl Analyzer {
                     }
                 }
             }
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => {
+            Expr::Binary { left, operator, right } => {
                 let left_type = self.check_expression(left);
                 let right_type = self.check_expression(right);
                 self.check_binary(*operator, left_type, right_type)
             }
             Expr::Call { callee, arguments } => {
                 let callee_name = match callee.as_ref() {
-                    Expr::Variable(name) => Some(name),
+                    Expr::Variable(name) => Some(name.as_str()),
                     _ => None,
                 };
-
                 for argument in arguments {
                     self.check_expression(argument);
                 }
-
                 match callee_name {
-                    Some(name) => match self.functions.get(name) {
+                    Some(name) => match self.functions.get(name).copied() {
                         Some(function) => {
                             if function.arity != arguments.len() {
                                 self.error(format!(
                                     "function '{}' expects {} argument(s), got {}",
-                                    name,
-                                    function.arity,
-                                    arguments.len()
+                                    name, function.arity, arguments.len()
                                 ));
                             }
                             Type::Unknown
@@ -197,19 +196,12 @@ impl Analyzer {
 
     fn check_binary(&mut self, operator: BinaryOp, left: Type, right: Type) -> Type {
         match operator {
-            BinaryOp::Add
-            | BinaryOp::Subtract
-            | BinaryOp::Multiply
-            | BinaryOp::Divide
-            | BinaryOp::Modulo => {
+            BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => {
                 self.require_type(left, Type::Number, "arithmetic operators require numbers");
                 self.require_type(right, Type::Number, "arithmetic operators require numbers");
                 Type::Number
             }
-            BinaryOp::Less
-            | BinaryOp::LessEqual
-            | BinaryOp::Greater
-            | BinaryOp::GreaterEqual => {
+            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => {
                 self.require_type(left, Type::Number, "comparison operators require numbers");
                 self.require_type(right, Type::Number, "comparison operators require numbers");
                 Type::Boolean
@@ -239,7 +231,7 @@ impl Analyzer {
     }
 
     fn end_scope(&mut self) {
-        self.scopes.pop();
+        let _ = self.scopes.pop();
     }
 
     fn define(&mut self, name: String, ty: Type) {
@@ -249,17 +241,11 @@ impl Analyzer {
     }
 
     fn current_scope_contains(&self, name: &str) -> bool {
-        self.scopes
-            .last()
-            .map(|scope| scope.contains_key(name))
-            .unwrap_or(false)
+        self.scopes.last().map(|scope| scope.contains_key(name)).unwrap_or(false)
     }
 
     fn lookup(&self, name: &str) -> Option<Type> {
-        self.scopes
-            .iter()
-            .rev()
-            .find_map(|scope| scope.get(name).copied())
+        self.scopes.iter().rev().find_map(|scope| scope.get(name).copied())
     }
 
     fn error(&mut self, message: String) {
