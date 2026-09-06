@@ -39,17 +39,22 @@ The project is being developed as a real compiler implementation rather than a s
 
 ### Phase 3 — Execution
 
-- [ ] Bytecode instruction set
-- [ ] Bytecode compiler
-- [ ] Virtual machine
-- [ ] Runtime values
-- [ ] Function call frames
+- [x] Bytecode instruction set
+- [x] Bytecode compiler for core statements and expressions
+- [x] Stack-based virtual machine
+- [x] Runtime values
+- [x] Conditional jumps
+- [x] Global variable storage
+- [x] Execution regression tests
+- [ ] Function bytecode and call frames
+- [ ] Closures
 - [ ] Memory management
 
 ### Phase 4 — Developer experience
 
 - [x] Basic compiler CLI
 - [x] Semantic `--check` mode
+- [x] AST inspection mode
 - [ ] REPL
 - [ ] Standard library
 - [ ] Rich source spans and diagnostics
@@ -66,16 +71,22 @@ if answer > 0 {
 }
 ```
 
-Run the parser:
+Execute it:
 
 ```bash
 cargo run -- examples/hello.aster
 ```
 
-Run semantic checking without dumping the AST:
+Check semantics without executing:
 
 ```bash
 cargo run -- --check examples/hello.aster
+```
+
+Inspect the parsed AST:
+
+```bash
+cargo run -- --dump-ast examples/hello.aster
 ```
 
 Run the test suite:
@@ -91,8 +102,10 @@ ASTER is deliberately staged so each compiler phase has a clear responsibility:
 1. **Lexer** converts source text into tokens and reports lexical errors.
 2. **Parser** converts tokens into an AST using recursive descent and precedence-aware expression parsing.
 3. **Semantic analyzer** resolves lexical scopes and validates names, function arity, and basic expression types.
-4. **Bytecode compiler** will lower the validated AST into a compact instruction stream.
-5. **Virtual machine** will execute bytecode using explicit runtime values and call frames.
+4. **Bytecode compiler** lowers validated core language constructs into a compact stack-machine instruction stream.
+5. **Virtual machine** executes bytecode using explicit runtime values, a value stack, and global storage.
+
+The next execution milestone is function compilation with call frames, followed by richer runtime semantics.
 
 See [`docs/architecture.md`](docs/architecture.md) for the longer design notes.
 
