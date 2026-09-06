@@ -1,21 +1,22 @@
 use std::{env, fs, process};
 
-use aster::{analyze_source, parse_source, CompileError};
+use aster::{analyze_source, execute_source, parse_source, CompileError};
 
 fn main() {
     let mut args = env::args().skip(1);
     let first = args.next();
 
-    let (check_only, path) = match first.as_deref() {
-        Some("--check") => (true, args.next()),
-        Some(path) => (false, Some(path.to_string())),
-        None => (false, None),
+    let (mode, path) = match first.as_deref() {
+        Some("--check") => ("check", args.next()),
+        Some("--dump-ast") => ("ast", args.next()),
+        Some(path) => ("run", Some(path.to_string())),
+        None => ("run", None),
     };
 
     let path = match path {
         Some(path) => path,
         None => {
-            eprintln!("Usage: aster [--check] <file.aster>");
+            eprintln!("Usage: aster [--check|--dump-ast] <file.aster>");
             process::exit(2);
         }
     };
@@ -28,27 +29,26 @@ fn main() {
         }
     };
 
-    let result = if check_only {
-        analyze_source(&source)
-    } else {
-        parse_source(&source)
-    };
-
-    match result {
-        Ok(program) => {
-            if check_only {
-                println!("ASTER: semantic check passed ({} top-level statement(s)).", program.statements.len());
-            } else {
-                println!("Parsed {} top-level statement(s).", program.statements.len());
-                println!("{:#?}", program);
-            }
-        }
-        Err(error) => {
-            eprintln!("ASTER: compilation failed\n{error:#?}");
-            if matches!(error, CompileError::Semantic(_)) {
-                process::exit(1);
-            }
-            process::exit(1);
-        }
+    match mode {
+        "check" => match analyze_source(&source) {
+            Ok(program) => println!(
+                "ASTER: semantic check passed ({} top-level statement(s)).",
+                program.statements.len()
+            ),
+            Err(error) => fail(error),
+        },
+        "ast" => match parse_source(&source) {
+            Ok(program) => println!("{:#?}", program),
+            Err(error) => fail(error),
+        },
+        _ => match execute_source(&source) {
+            Ok(_) => {}
+            Err(error) => fail(error),
+        },
     }
+}
+
+fn fail(error: CompileError) -> ! {
+    eprintln!("ASTER: compilation failed\n{error:#?}");
+    process::exit(1);
 }
