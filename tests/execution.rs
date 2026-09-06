@@ -1,6 +1,18 @@
 use aster::execute_source;
 
 #[test]
+fn executes_basic_addition() {
+    let output = execute_source(
+        r#"
+            print(5 + 2);
+        "#,
+    )
+    .expect("basic addition should execute");
+
+    assert_eq!(output, vec!["7".to_string()]);
+}
+
+#[test]
 fn executes_arithmetic_and_variables() {
     let output = execute_source(
         r#"
