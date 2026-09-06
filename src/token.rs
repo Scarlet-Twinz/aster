@@ -28,6 +28,7 @@ pub enum TokenKind {
     GreaterEqual,
     AndAnd,
     OrOr,
+    Colon,
 
     LeftParen,
     RightParen,
