@@ -188,6 +188,9 @@ ASTER is an implementation study in:
 
 MIT
 
+
+The repository is documented as an implementation study so the compiler pipeline can be followed from source text through execution.
+
 ## Author
 
 **Anthony Emmanuella Mmasinachi**
