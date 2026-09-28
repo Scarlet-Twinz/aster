@@ -184,21 +184,9 @@ ASTER is an implementation study in:
 - diagnostics and regression testing; and
 - Rust systems programming.
 
+
 ## License
 
-MIT
+MIT License.
 
-
-The repository is documented as an implementation study so the compiler pipeline can be followed from source text through execution.
-
-## Author
-
-**Anthony Emmanuella Mmasinachi**
-
-Full-stack and systems engineer focused on backend infrastructure, distributed systems, networking, compilers, databases, AI integration, and systems programming.
-
-## Project Links
-
-- **Repository:** https://github.com/Scarlet-Twinz/aster
-- **Author:** Anthony Emmanuella Mmasinachi
-- **GitHub:** https://github.com/Scarlet-Twinz
+See [LICENSE](LICENSE) for the full license text.
